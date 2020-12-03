@@ -20,6 +20,7 @@ void LuaExecutor::InitLuaExecutor()
 {
 	// Colour Stuff
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hConsole, FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 
 	// Initializing Lua Functions
 	printf("Initializing Lua Functions -> ");
