@@ -3,27 +3,24 @@
 
 // Colour Stuff
 HANDLE hConsole;
-CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
 
 void error() {
 	SetConsoleTextAttribute(hConsole, FOREGROUND_INTENSITY | FOREGROUND_RED);
 	printf("ERROR\n");
-	SetConsoleTextAttribute(hConsole, csbiInfo.wAttributes);
+	SetConsoleTextAttribute(hConsole, FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 }
 
 void success() {
 	SetConsoleTextAttribute(hConsole, FOREGROUND_INTENSITY | FOREGROUND_GREEN);
 	printf("Success!\n");
-	SetConsoleTextAttribute(hConsole, csbiInfo.wAttributes);
+	SetConsoleTextAttribute(hConsole, FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 }
 
 void LuaExecutor::InitLuaExecutor()
 {
 	// Colour Stuff
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
-	GetConsoleScreenBufferInfo(hConsole, &csbiInfo);
-	
+
 	// Initializing Lua Functions
 	printf("Initializing Lua Functions -> ");
 	HMODULE luaShared = GetModuleHandleA("lua_shared.dll");
