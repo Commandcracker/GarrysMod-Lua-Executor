@@ -66,6 +66,39 @@ void CustomTheme()
 	style->Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.2f, 0.69f, 0.22f, 1.f);
 }
 
+// Get the window
+struct handle_data {
+	unsigned long process_id;
+	HWND best_handle;
+};
+
+BOOL is_main_window(HWND handle)
+{
+	return GetWindow(handle, GW_OWNER) == (HWND)0 && IsWindowVisible(handle);
+}
+
+BOOL CALLBACK enum_windows_callback(HWND handle, LPARAM lParam)
+{
+	handle_data& data = *(handle_data*)lParam;
+	unsigned long process_id = 0;
+	GetWindowThreadProcessId(handle, &process_id);
+	if (data.process_id != process_id || !is_main_window(handle)) {
+		return TRUE;
+	}
+	data.best_handle = handle;
+	return FALSE;
+}
+
+HWND find_main_window(unsigned long process_id)
+{
+	handle_data data;
+	data.process_id = process_id;
+	data.best_handle = 0;
+	EnumWindows(enum_windows_callback, (LPARAM)&data);
+	return data.best_handle;
+}
+
+// EndScene Hooked
 HRESULT __stdcall Hooked_EndScene(IDirect3DDevice9 * pDevice)
 {
 	static bool init = true;
@@ -78,7 +111,7 @@ HRESULT __stdcall Hooked_EndScene(IDirect3DDevice9 * pDevice)
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
 
-		ImGui_ImplWin32_Init(FindWindowA(NULL, "Garry's Mod"));
+		ImGui_ImplWin32_Init(find_main_window(GetCurrentProcessId()));
 		ImGui_ImplDX9_Init(pDevice);
 	
 		editor.SetLanguageDefinition(TextEditor::LanguageDefinition::Lua());
@@ -194,15 +227,14 @@ DWORD __stdcall D3D9Hook::stKeyHandleThread()
 
 void D3D9Hook::InitializeHook()
 {
-	oWndProc = (WNDPROC)SetWindowLongPtr(FindWindow(NULL, "Garry's Mod"), -4, (LONG_PTR)WndProc);
-
+	oWndProc = (WNDPROC)SetWindowLongPtr(find_main_window(GetCurrentProcessId()), -4, (LONG_PTR)WndProc);
 	static DWORD DirectXDevice = NULL;
 
-	while (!DirectXDevice)
+	while (!DirectXDevice) // loops until it finds the device
 		DirectXDevice = **(DWORD**)(FindPattern("shaderapidx9.dll", "A1 ?? ?? ?? ?? 50 8B 08 FF 51 0C") + 0x1);
 
-	void ** pVTable = *reinterpret_cast<void***>(DirectXDevice);
-	oEndScene = (EndScene)DetourFunction((PBYTE)pVTable[42], (PBYTE)Hooked_EndScene);
+	void** pVTable = *reinterpret_cast<void***>(DirectXDevice); // getting the vtable array
+	oEndScene = (EndScene)DetourFunction((PBYTE)pVTable[42], (PBYTE)Hooked_EndScene); //getting the 42th virtual function and detouring it to our own
 
 	errorMsg = (char*)"DirectX hooked successfully!";
 }
